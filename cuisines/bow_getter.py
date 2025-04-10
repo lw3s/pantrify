@@ -14,12 +14,12 @@ class Cuisines(IntEnum):
     CHINESE=6
 
 
-def get_bow(cuisine: Cuisine) -> list[str]:
+def get_cuisine_ingredients(cuisine: Cuisine) -> list[str]:
     """
-    Fetch a "bag of words" from the allrecipes.com page for the input cuisine
+    Fetch all of the ingredients for all of the featured recipes from the allrecipes.com page for the input cuisine
 
     @param  cuisine one of the 6 cuisines laid out in Cuisines enum
-    @return         a list of strings representing the important words on that cuisine's allrecipes page
+    @return         a list of the ingredients as described above
     """
     CUISINE_LINKS = [
         "https://www.allrecipes.com/recipes/728/world-cuisine/latin-american/mexican/",
@@ -37,7 +37,20 @@ def get_bow(cuisine: Cuisine) -> list[str]:
 
     items = re.findall(LIST_ITEM, cuisine_page)
     links = re.findall(LINK, "".join(items))
-    names = [ i.split("/")[-2] for i in links ]
-    words = sum((i.split("-") for i in names), start = [])
-    return words
+    full_bow = [ get_ingredients_from_recipe(i) for i in links ]
+    return sum(full_bow, start = [])
+
+
+def get_ingredients_from_recipe(link: str) -> list[str]:
+    """
+    Helper function for get_cuisine_ingredients; fetches the ingredients from a recipe page
+
+    @param  link    the link to the recipe
+    @return         a list of strings representing the ingredients in the recipe
+    """
+    INGREDIENT_NAME = r"<span data-ingredient-name=\"true\">.+</span>"
+    string_form = requests.get(link).text
+    ingredients = re.findall(INGREDIENT_NAME, string_form)
+    ingredients = [ i[34:-7] for i in ingredients ]
+    return ingredients
 
